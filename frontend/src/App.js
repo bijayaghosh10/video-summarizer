@@ -81,11 +81,13 @@ function App() {
 
       if (!res.ok || data.error) {
         setError(data.error || "Something went wrong. Please try again.");
-      } else {
-        setSummary(data.text);
-        setVideoUrl(`${API_URL}/video?t=${Date.now()}`);
-        setCurrentStep(STEPS.length);
-      }
+      }  else {
+  setSummary(data.text);
+  if (data.video) {
+    setVideoUrl(`${API_URL}/video?t=${Date.now()}`);
+  }
+  setCurrentStep(STEPS.length);
+}
     } catch (err) {
       clearInterval(stepTimer);
       setError("Cannot reach the server. Make sure the backend is running.");
