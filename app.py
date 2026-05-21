@@ -120,4 +120,4 @@ def get_video():
 
 if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(debug=debug_mode, port=5003)
+    app.run(host="0.0.0.0", port=10000, debug=debug_mode)
