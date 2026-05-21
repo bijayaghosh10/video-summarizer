@@ -92,11 +92,11 @@ def upload_video():
         summary = chat.choices[0].message.content
         logger.info("Summary done.")
 
-        # ── Generate summary video ────────────────────────────────────────────
-        logger.info("Generating summary video...")
-        output_video_path = os.path.join(OUTPUT_FOLDER, "summary.mp4")
-        generate_video_summary(file_path, output_video_path)
-
+        # ── Generate summary video (only on local, skip on server) ───────────
+        if os.getenv("FLASK_DEBUG") == "true":
+            logger.info("Generating summary video...")
+            output_video_path = os.path.join(OUTPUT_FOLDER, "summary.mp4")
+            generate_video_summary(file_path, output_video_path)
         logger.info("Done!")
         return jsonify({"text": summary, "video": "/video"})
 
