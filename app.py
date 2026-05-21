@@ -10,8 +10,8 @@ from video_processor import generate_video_summary
 # ── Load .env file ──────────────────────────────────────────────────────────
 load_dotenv()
 
-# ── Logging ─────────────────────────────────────────────────────────────────
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+# ── Logging (DEBUG level to see all errors) ─────────────────────────────────
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 # ── App setup ────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
 
-# ── Groq client (handles both Whisper + Llama) ───────────────────────────────
+# ── Groq client ──────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 if not GROQ_API_KEY:
     raise RuntimeError("GROQ_API_KEY not set. Add it to your .env file.")
@@ -48,6 +48,9 @@ def upload_video():
         file = request.files.get("file")
         language = request.form.get("language", "English")
 
+        logger.debug(f"Received file: {file}")
+        logger.debug(f"Language: {language}")
+
         if not file or file.filename == "":
             return jsonify({"error": "No file uploaded"}), 400
 
@@ -59,7 +62,7 @@ def upload_video():
         file.save(file_path)
         logger.info(f"File saved: {safe_name}")
 
-        # ── Transcribe using Groq Whisper API (no local model needed) ────────
+        # ── Transcribe using Groq Whisper API ────────────────────────────────
         logger.info("Transcribing audio via Groq Whisper...")
         with open(file_path, "rb") as audio_file:
             transcription = client.audio.transcriptions.create(
@@ -67,11 +70,10 @@ def upload_video():
                 model="whisper-large-v3",
             )
         transcript = transcription.text
+        logger.info(f"Transcript: {transcript[:100]}")
 
         if not transcript.strip():
             return jsonify({"error": "Could not detect any speech in this video"}), 422
-
-        logger.info("Transcription done.")
 
         # ── Summarize using Llama 3 ───────────────────────────────────────────
         logger.info("Generating summary...")
@@ -90,19 +92,21 @@ def upload_video():
             max_tokens=150,
         )
         summary = chat.choices[0].message.content
-        logger.info("Summary done.")
+        logger.info(f"Summary: {summary}")
 
-        # ── Generate summary video (only on local, skip on server) ───────────
+        # ── Generate summary video (only on local) ────────────────────────────
         if os.getenv("FLASK_DEBUG") == "true":
             logger.info("Generating summary video...")
             output_video_path = os.path.join(OUTPUT_FOLDER, "summary.mp4")
             generate_video_summary(file_path, output_video_path)
+            return jsonify({"text": summary, "video": "/video"})
+
         logger.info("Done!")
-        return jsonify({"text": summary, "video": "/video"})
+        return jsonify({"text": summary})
 
     except Exception as e:
         logger.error(f"Upload failed: {e}", exc_info=True)
-        return jsonify({"error": "Something went wrong. Please try again."}), 500
+        return jsonify({"error": str(e)}), 500
 
     finally:
         if file_path and os.path.exists(file_path):
