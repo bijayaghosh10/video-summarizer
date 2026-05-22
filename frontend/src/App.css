@@ -308,3 +308,26 @@ body {
   .drop-zone { padding: 28px 12px; }
   .btn { padding: 11px 16px; font-size: 13px; }
 }
+/* Loading step indicator */
+.loading-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #ff6a00;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 106, 0, 0.3);
+  border-top: 2px solid #ff6a00;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
